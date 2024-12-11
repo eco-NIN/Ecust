@@ -1,0 +1,48 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid;
+    int status;
+
+    // 创建子进程
+    pid = fork();
+
+    if (pid < 0) {
+        // fork() 失败
+        perror("Fork failed");
+        return 1;
+    } else if (pid == 0) {
+        // 子进程
+
+        // 使用 execvp() 调用 ls 命令
+        char *args[] = {"ls", NULL}; // ls 命令及其参数
+        execvp(args[0], args); // 替换当前进程映像
+        // 如果 execvp() 成功，下面的代码不会执行
+        perror("exec failed");
+        exit(1); // exec 失败，退出子进程
+
+
+    } else {
+        // 父进程
+        // 等待子进程结束
+        pid_t terminated_pid = waitpid(pid, &status, 0);
+        
+        if (terminated_pid < 0) {
+            perror("waitpid failed");
+            return 1;
+        }
+
+        // 检查子进程的退出状态
+        if (WIFEXITED(status)) {
+            printf("子进程 %d 正常结束，退出状态：%d\n", terminated_pid, WEXITSTATUS(status));
+        } else {
+            printf("子进程 %d 非正常结束\n", terminated_pid);
+        }
+    }
+
+    return 0;
+}
